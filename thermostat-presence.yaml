@@ -1,0 +1,93 @@
+blueprint:
+  name: Thermostat Presence
+  description: Set Thermostat to defined temperature if presence state switches.
+  domain: automation
+  source_url: https://github.com/domrim/homeassistant-blueprints/blob/main/thermostat-presence.yml
+  input:
+    presence_state:
+      name: Presence state
+      selector:
+        entity:
+          domain: input_boolean
+          multiple: false
+    thermostat_target:
+      name: Thermostats
+      selector:
+        target:
+          device:
+            integration: better_thermostat
+          entity:
+            integration: better_thermostat
+            domain: climate
+    idle_temp_helper:
+      name: Idle Temperature Helper
+      description: The target idle temperature helper
+      selector:
+        entity:
+          domain: input_number
+          multiple: false
+    comfort_temp_helper:
+      name: Comfort Temperature
+      description: The target comfort temperature helper
+      selector:
+        entity:
+          domain: input_number
+          multiple: false
+mode: queued
+max_exceeded: silent
+variables:
+  idle_temp: !input idle_temp_helper
+  comfort_temp: !input comfort_temp_helper
+trigger:
+- platform: state
+  entity_id: !input presence_state
+  from: 'on'
+  to: 'off'
+  id: 'absent'
+- platform: state
+  entity_id: !input presence_state
+  from: 'off'
+  to: 'on'
+  id: 'present'
+- platform: state
+  entity_id: !input idle_temp_helper
+  id: 'idle_value'
+- platform: state
+  entity_id: !input comfort_temp_helper
+  id: 'comfort_value'
+condition:
+  condition: or
+  conditions:
+    - condition: trigger
+      id: 'absent'
+    - condition: trigger
+      id: 'present'
+    - condition: and
+      conditions:
+        - condition: trigger
+          id: 'comfort_value'
+        - condition: state
+          entity_id: !input presence_state
+          state: 'on'
+    - condition: and
+      conditions:
+        - condition: trigger
+          id: 'idle_value'
+        - condition: state
+          entity_id: !input presence_state
+          state: 'off'
+action:
+- if:
+  - condition: state
+    entity_id: !input presence_state
+    state: 'on'
+  then:
+  - service: climate.set_temperature
+    data:
+      temperature: '{{ states(comfort_temp) | float }}'
+    target: !input thermostat_target
+  else:
+  - service: climate.set_temperature
+    data:
+      temperature: '{{ states(idle_temp) | float }}'
+    target: !input thermostat_target
