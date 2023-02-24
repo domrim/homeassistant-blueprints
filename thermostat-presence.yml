@@ -1,0 +1,67 @@
+blueprint:
+  name: Thermostat Presence
+  description: Set Thermostat to defined temperature if presence state switches.
+  domain: automation
+  source_url: https://gitlab.com/domrim/homeassistant-blueprints
+  input:
+    presence_state:
+      name: Presence state
+      selector:
+        entity:
+          domain: input_boolean
+    thermostat_target:
+      name: Thermostats
+      selector:
+        target:
+          device:
+            integration: better_thermostat
+          entity:
+            integration: better_thermostat
+            domain: climate
+    idle_temp:
+      name: Idle Temperature
+      description: The target idle temperature
+      default: 19
+      selector:
+        number:
+          min: 5
+          max: 35
+          unit_of_measurement: °C
+    comfort_temp:
+      name: Comfort Temperature
+      description: The target comfort temperature
+      default: 21
+      selector:
+        number:
+          min: 5
+          max: 35
+          unit_of_measurement: °C
+
+mode: queued
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input presence_state
+    from: "on"
+    to: "off"
+  - platform: state
+    entity_id: !input presence_state
+    from: "off"
+    to: "on"
+condition: []
+action:
+  - if:
+      - condition: state
+        entity_id: !input presence_state
+        state: "on"
+    then:
+      - service: climate.set_temperature
+        data:
+          temperature: !input comfort_temp
+        target: !input thermostat_target
+    else:
+      - service: climate.set_temperature
+        data:
+          temperature: !input idle_temp
+        target: !input thermostat_target
