@@ -2,7 +2,7 @@ blueprint:
   name: Thermostat Presence
   description: Set Thermostat to defined temperature if presence state switches.
   domain: automation
-  source_url: https://gitlab.com/domrim/homeassistant-blueprints
+  source_url: https://gitlab.com/domrim/homeassistant-blueprints/-/raw/main/thermostat-presence.yml
   input:
     presence_state:
       name: Presence state
